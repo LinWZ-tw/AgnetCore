@@ -1,0 +1,11 @@
+# Core deps needed by every install, regardless of which domain(s) you use.
+# Domain routing/detection (inspect_data_source / inspect_gwas_input) is
+# pure stdlib, so this alone is enough to run the Planner's routing logic;
+# actually *executing* a domain's steps needs that domain's extras file too.
+anthropic>=0.111.0
+openai>=1.0.0
+
+# --- Optional domain extras ---
+# Bio (WES/scRNA) pipeline:      pip install -r requirements-bio.txt
+# Post-GWAS pipeline:            pip install -r requirements-gwas.txt
+# Both:                          pip install -r requirements-bio.txt -r requirements-gwas.txt

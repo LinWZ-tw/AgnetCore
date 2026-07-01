@@ -1,0 +1,8 @@
+[
+  {
+    "source": "MASLD",
+    "target": "Cirrhosis",
+    "mr_results_csv": "/mnt/Storage5/weizhilin/GWASagent/smoketest/synthetic/MR_results/Cirrhosis_MR_results.csv",
+    "method": "Inverse variance weighted"
+  }
+]

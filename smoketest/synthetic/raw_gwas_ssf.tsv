@@ -1,0 +1,3 @@
+chromosome	base_pair_location	effect_allele	other_allele	effect_allele_frequency	beta	standard_error	p_value
+19	19349732	C	G	0.0636	0.281	0.0326	7.36e-18
+1	1000079	A	G	0.2107	-0.0088	0.0208	0.67

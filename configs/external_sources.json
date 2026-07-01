@@ -1,0 +1,49 @@
+{
+  "_comment": "Whitelist of external data sources the Planner agent may query. base_url is the only allowed HTTP origin per source. Add an 'headers' dict for sources requiring API keys (set the value as an env-var reference like '$OPENTARGETS_KEY' and resolve in dispatch).",
+  "gtex": {
+    "base_url": "https://gtexportal.org/api/v2",
+    "description": "GTEx v8 REST API — tissue-specific eQTL data, gene expression, tissue list",
+    "example_paths": [
+      "/association/singleTissueEqtl?gencodeId=ENSG00000169174.9&tissueSiteDetailId=Whole_Blood&datasetId=gtex_v8",
+      "/dataset/tissueSiteDetail",
+      "/expression/geneExpression?gencodeId=ENSG00000169174.9&tissueSiteDetailId=Whole_Blood"
+    ]
+  },
+  "gwas_catalog": {
+    "base_url": "https://www.ebi.ac.uk/gwas/rest/api",
+    "description": "GWAS Catalog REST API — existing GWAS studies, associations, traits, variants",
+    "example_paths": [
+      "/studies/search?q=type+2+diabetes",
+      "/associations/search?q=rs7903146",
+      "/efoTraits/search?q=body+mass+index"
+    ]
+  },
+  "open_targets_platform": {
+    "base_url": "https://api.platform.opentargets.org/api/v4",
+    "description": "Open Targets Platform REST API — target-disease associations, V2G scores, tractability",
+    "example_paths": [
+      "/target/ENSG00000169174",
+      "/disease/EFO_0004593/associations",
+      "/variant/1_154426264_C_T/v2g"
+    ]
+  },
+  "ensembl": {
+    "base_url": "https://rest.ensembl.org",
+    "description": "Ensembl REST API — gene/variant annotation, rsID lookup, LD, VEP consequences",
+    "example_paths": [
+      "/lookup/symbol/homo_sapiens/PCSK9?content-type=application/json",
+      "/variation/human/rs7903146?content-type=application/json",
+      "/ld/human/rs7903146/1000GENOMES:phase_3:EUR?content-type=application/json&r2=0.8"
+    ]
+  },
+  "ieu_opengwas": {
+    "base_url": "https://gwas.mrcieu.ac.uk/igd",
+    "description": "IEU OpenGWAS — searchable index of GWAS summary datasets for use as MR outcomes",
+    "example_paths": [
+      "/batches",
+      "/batches/ukb-b",
+      "/phewas?variant=7:117174349",
+      "/gwasinfo?id=ieu-a-2"
+    ]
+  }
+}

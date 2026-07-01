@@ -1,0 +1,34 @@
+# Pipeline outputs (large, run-specific)
+results/
+
+# Local input data (symlinks to machine-specific storage, downloaded demo
+# files, raw GWAS files). smoketest/ and configs/ are deliberately NOT
+# ignored -- they are git-tracked validated fixtures / config, not run output.
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets
+.env
+*.key
+
+# Claude Code local (per-user) settings -- not meant to be shared/committed
+.claude/settings.local.json

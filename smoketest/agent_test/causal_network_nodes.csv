@@ -1,0 +1,9 @@
+id,label,group,color
+Cirrhosis,Cirrhosis,Trait,red
+MASLD,MASLD,Trait,red
+ENSG_MYC,ENSG_MYC,Gene,blue
+ENSG_TM6SF2,ENSG_TM6SF2,Gene,blue
+ENSG_NOOP,ENSG_NOOP,Gene,blue
+8:125495147:C:A,8:125495147:C:A,SNP,gray
+19:19349732:G:C,19:19349732:G:C,SNP,gray
+1:1000079:G:A,1:1000079:G:A,SNP,gray

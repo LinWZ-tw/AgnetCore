@@ -1,0 +1,9 @@
+source,target,type,weight,smr_p,prob
+8:125495147:C:A,ENSG_MYC,SNP-Gene (Validated),0.6,0.3398646976610109,1.0
+19:19349732:G:C,ENSG_TM6SF2,SNP-Gene (Validated),0.85,0.4151209272850687,1.0
+1:1000079:G:A,ENSG_NOOP,SNP-Gene (Validated),0.05,0.3940498168713857,1.0
+ENSG_MYC,Cirrhosis,Gene-Trait (Discovery),1.0,0.3398646976610109,1.0
+ENSG_TM6SF2,Cirrhosis,Gene-Trait (Discovery),1.0,0.4151209272850687,1.0
+ENSG_TM6SF2,MASLD,Gene-Trait (Discovery),1.0,0.3251629034805199,1.0
+ENSG_NOOP,MASLD,Gene-Trait (Discovery),1.0,0.3940498168713857,1.0
+MASLD,Cirrhosis,Disease Progression,1.57,0.00015,1.0

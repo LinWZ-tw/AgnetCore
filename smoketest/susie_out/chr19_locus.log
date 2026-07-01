@@ -1,0 +1,29 @@
+PLINK v1.9.0-b.8 64-bit (22 Oct 2024)
+Options in effect:
+  --allow-extra-chr
+  --bfile /mnt/Storage5/weizhilin/3dGenomeBrowser/EPFinder/data/1000Genome/1000G_hg38_common
+  --extract susie_out/chr19_locus_snps.txt
+  --make-just-bim
+  --out susie_out/chr19_locus
+  --r square
+
+Hostname: WorkStation1
+Working directory: /mnt/Storage5/weizhilin/GWASagent/smoketest
+Start time: Wed Jun 17 14:51:11 2026
+
+Random number seed: 1781722271
+128807 MB RAM detected; reserving 64403 MB for main workspace.
+13335775 variants loaded from .bim file.
+3202 people (1598 males, 1603 females, 1 ambiguous) loaded from .fam.
+Ambiguous sex ID written to susie_out/chr19_locus.nosex .
+--extract: 946 variants remaining.
+Using up to 23 threads (change this with --threads).
+Before main variant filters, 2583 founders and 619 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is in [0.9999995, 1).
+946 variants and 3202 people pass filters and QC.
+Note: No phenotypes present.
+--make-just-bim to susie_out/chr19_locus.bim ... done.
+--r square to susie_out/chr19_locus.ld ... done.
+
+End time: Wed Jun 17 14:51:16 2026

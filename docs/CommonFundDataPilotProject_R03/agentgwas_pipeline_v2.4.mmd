@@ -1,0 +1,26 @@
+flowchart TD
+    Input([Investigator Query])
+    Planner["Planner Agent<br/>Natural language → session plan"]
+    Review{"Human Review"}
+    Dispatch["Task Dispatch"]
+    S1["Stage 1: Variant-to-Gene"]
+    S2["Stage 2: Variant-to-Transcriptome"]
+    S3["Stage 3: Druggability"]
+    S4["Stage 4: In-Silico Perturbation"]
+    S5["Stage 5: Transcriptome-to-Proteome"]
+    Output([Evidence-graded Output])
+    KG[("Knowledge Graph")]
+
+    Input --> Planner --> Review
+    Review -->|Revise| Planner
+    Review -->|Approve| Dispatch --> S1
+    S1 --> S2
+    S1 --> S3
+    S2 --> S4
+    S3 --> S4
+    S4 --> S5 --> Output
+    S1 <-.-> KG
+    S2 <-.-> KG
+    S3 <-.-> KG
+    S4 <-.-> KG
+    S5 <-.-> KG
