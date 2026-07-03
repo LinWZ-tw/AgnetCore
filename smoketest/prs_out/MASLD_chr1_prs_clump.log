@@ -1,0 +1,41 @@
+PLINK v1.9.0-b.8 64-bit (22 Oct 2024)
+Options in effect:
+  --bfile data/ref/1000G_phase3/all_hg38_chr1
+  --clump smoketest/MASLD_chr1_slice.ma
+  --clump-field p
+  --clump-kb 250
+  --clump-p1 1e-2
+  --clump-p2 1e-2
+  --clump-r2 0.1
+  --clump-snp-field SNP
+  --out smoketest/prs_out/MASLD_chr1_prs_clump
+
+Hostname: DeskTop-LinWZ
+Working directory: /home/weizhilin/agent0
+Start time: Fri Jul  3 12:12:38 2026
+
+Random number seed: 1783095158
+15921 MB RAM detected; reserving 7960 MB for main workspace.
+5759060 variants loaded from .bim file.
+3202 people (1598 males, 1603 females, 1 ambiguous) loaded from .fam.
+Ambiguous sex ID written to smoketest/prs_out/MASLD_chr1_prs_clump.nosex .
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 2583 founders and 619 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is in [0.9999995, 1).
+5759060 variants and 3202 people pass filters and QC.
+Note: No phenotypes present.
+Warning: '1:2579166:G:C' is missing from the main dataset, and is a top
+variant.
+Warning: '1:1290579:G:C' is missing from the main dataset, and is a top
+variant.
+Warning: '1:2572037:C:A' is missing from the main dataset, and is a top
+variant.
+Warning: '1:2440881:G:A' is missing from the main dataset, and is a top
+variant.
+Warning: '1:2480840:T:A' is missing from the main dataset, and is a top
+variant.
+--clump: 5 clumps formed from 6 top variants.
+Results written to smoketest/prs_out/MASLD_chr1_prs_clump.clumped .
+
+End time: Fri Jul  3 12:12:44 2026

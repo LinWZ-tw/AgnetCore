@@ -1,0 +1,30 @@
+PLINK v1.9.0-b.8 64-bit (22 Oct 2024)
+Options in effect:
+  --bfile data/ref/1000G_phase3/all_hg38_chr1
+  --extract smoketest/prs_out/MASLD_chr1_prs.valid.snp
+  --out smoketest/prs_out/MASLD_chr1_prs
+  --score smoketest/prs_out/MASLD_chr1_prs.weights.txt 1 2 3
+
+Hostname: DeskTop-LinWZ
+Working directory: /home/weizhilin/agent0
+Start time: Fri Jul  3 12:12:44 2026
+
+Random number seed: 1783095164
+15921 MB RAM detected; reserving 7960 MB for main workspace.
+5759060 variants loaded from .bim file.
+3202 people (1598 males, 1603 females, 1 ambiguous) loaded from .fam.
+Ambiguous sex ID written to smoketest/prs_out/MASLD_chr1_prs.nosex .
+--extract: 5 variants remaining.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 2583 founders and 619 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is in [0.9999995, 1).
+5 variants and 3202 people pass filters and QC.
+Note: No phenotypes present.
+Warning: 3747 lines skipped in --score file (3747 due to variant ID mismatch, 0
+due to allele code mismatch); see smoketest/prs_out/MASLD_chr1_prs.nopred for
+details.
+--score: 5 valid predictors loaded.
+--score: Results written to smoketest/prs_out/MASLD_chr1_prs.profile .
+
+End time: Fri Jul  3 12:12:45 2026

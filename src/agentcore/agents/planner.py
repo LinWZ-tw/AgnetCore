@@ -145,7 +145,17 @@ def make_dispatch(
             )
             return {"stage": "drug", "status": "done", "summary": summary}
 
-        return {"error": f"unknown stage '{stage}'; expected v2g, mr, or drug"}
+        if stage == "prs":
+            from ..domains.gwas.agents import prs_agent
+            summary = prs_agent.run(
+                run_id=run_id_, context=context,
+                provider_name=provider_name, api_key=api_key, model=model,
+                base_url=base_url, effort=effort, auto_approve=auto_approve_,
+                emit_fn=emit_fn,
+            )
+            return {"stage": "prs", "status": "done", "summary": summary}
+
+        return {"error": f"unknown stage '{stage}'; expected v2g, mr, drug, or prs"}
 
     def _call_reporter(run_id_: str, auto_approve_: bool) -> dict[str, Any]:
         from . import reporter
