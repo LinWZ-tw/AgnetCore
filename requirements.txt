@@ -9,3 +9,8 @@ openai>=1.0.0
 # Bio (WES/scRNA) pipeline:      pip install -r requirements-bio.txt
 # Post-GWAS pipeline:            pip install -r requirements-gwas.txt
 # Both:                          pip install -r requirements-bio.txt -r requirements-gwas.txt
+#
+# Note: GWAS real-mode steps (COJO, SuSiE, MR, and the optional PRS stage) also
+# need the `gcta64`/`plink`/R `finemap` conda env -- not pip-installable; see
+# requirements-gwas.txt and the README "GWAS conda environments" section. The
+# PRS stage in particular adds no new pip package (plink already lives there).

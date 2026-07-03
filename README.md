@@ -11,7 +11,9 @@ to say which one you want:
 - **GWAS** (from the former `agnet2postGWAS`/AgentGWAS project) — a
   post-GWAS translational pipeline: Stage V2G (format_gwas → COJO → SuSiE
   fine-mapping) → Stage MR (SMR eQTL validation → optional two-sample MR →
-  causal network) → Stage Drug (Open Targets druggability lookup).
+  causal network) → Stage Drug (Open Targets druggability lookup), plus an
+  optional Stage PRS (clumping + thresholding polygenic risk score) that
+  runs after V2G.
 
 Drive it from a browser chat UI (`server.py`) or an interactive CLI
 (`run_pipeline.py`). Both talk to the same Planner/Worker/Reporter agent
@@ -145,9 +147,9 @@ are domain-specific.
 │  mutation_calling     │   │  clustering ->        │   │    network)                 │
 │                       │   │  differential_        │   │  drug_agent (Open Targets   │
 │                       │   │  expression -> gsea   │   │    druggability)            │
-│                       │   │                       │   │                             │
+│                       │   │                       │   │  prs_agent  (optional PRS)  │
 │                       │   │                       │   │  Stages run sequentially:   │
-│                       │   │                       │   │  v2g -> mr -> drug, each    │
+│                       │   │                       │   │  v2g->mr->drug (+prs opt),  │
 │                       │   │                       │   │  reading prior stage        │
 │                       │   │                       │   │  output from the            │
 │                       │   │                       │   │  checkpoint via             │
@@ -214,9 +216,19 @@ checkpoint rather than receiving it as a direct argument:
    `druggability` (Open Targets Platform lookup for each candidate gene in
    the causal network).
 
-Stage V2G and the SMR/two-sample-MR steps of Stage MR shell out to the
-`finemap` conda env (`gcta64`, `plink`, R + `susieR`/`TwoSampleMR`); there is
-no mock mode for GWAS — steps either run for real or fail with a clear
+Additionally, an **optional Stage PRS** (`prs_agent.py`) can be dispatched to
+build a polygenic risk score:
+`prs` (`tools/prs_clump_score.sh`: `plink --clump` to select LD-independent
+index SNPs at a p-value threshold → weight file from the V2G-formatted `.ma`
+→ `plink --score` on a target cohort → per-individual `.profile`). It depends
+only on the `.ma` and a PLINK bfile, so it runs after Stage V2G independently
+of the MR and Drug stages. Passing an `extract_snps` SNP-list file restricts
+the clumped set to a supplied variant list, yielding a pathway/gene-restricted
+PRS (e.g. only variants mapping to a candidate pathway's genes).
+
+Stage V2G, Stage PRS, and the SMR/two-sample-MR steps of Stage MR shell out to
+the `finemap` conda env (`gcta64`, `plink`, R + `susieR`/`TwoSampleMR`); there
+is no mock mode for GWAS — steps either run for real or fail with a clear
 missing-dependency/missing-file error (see [§6.3](#63-gwas-conda-environments)).
 
 ### 2.4 Shared infrastructure
@@ -261,7 +273,9 @@ through `AgentSession` instead of a blocking loop):
    free-form `context` dict (trait name, PLINK bfile, eQTL path, sample
    size, outcome GWAS file, ...) — each stage reads the prior stage's
    recorded outputs back out of the checkpoint via `read_checkpoint`
-   rather than receiving them directly as arguments.
+   rather than receiving them directly as arguments. If a polygenic risk
+   score was requested, it also dispatches `"prs"` (any time after `"v2g"`,
+   since it needs only the formatted `.ma` and a PLINK bfile).
 5. **Step execution (both domains, identical contract).** Inside a
    worker/stage agent, every heavy step is: `start_job(step, args)` →
    `jobs.start_job()` submits the actual step function
@@ -300,7 +314,7 @@ which agent layer holds it.
 | `inspect_data_source` | Planner | Classify a bio input path (fastq archive/dir, `.h5`, `.h5ad`, multimodal cohort) without extracting anything. |
 | `inspect_gwas_input` | Planner | Sniff a GWAS summary-stats file: separator, columns, row count, min p-value, genome-build hints. |
 | `dispatch_worker` | Planner | Hand one bio sample off to `wes_agent` or `scrna_agent`. |
-| `dispatch_stage` | Planner | Hand off to `v2g_agent` / `mr_agent` / `drug_agent`, in order. |
+| `dispatch_stage` | Planner | Hand off to `v2g_agent` / `mr_agent` / `drug_agent` in order, plus the optional `prs_agent` (polygenic risk score) after `v2g`. |
 | `generate_report` | Planner | Trigger the Reporter once all dispatches are done. |
 | `fetch_external_data` | Planner | Whitelisted GET against `configs/external_sources.json` sources (GTEx, GWAS Catalog, Open Targets, Ensembl, IEU OpenGWAS) — used e.g. to look up eQTL tissues or annotate a gene before dispatching. |
 | `list_available_assets` | all agents | Glob a directory (size + mtime) instead of guessing paths. |
@@ -330,13 +344,13 @@ configs/
   external_sources.json         whitelist of external APIs for fetch_external_data
   example_run.md                worked example transcript
 tools/                          gwas standalone scripts, run as subprocesses
-  cojo.sh, extract_ld_and_run_susie.sh, run_mr_pipeline.sh
+  cojo.sh, extract_ld_and_run_susie.sh, run_mr_pipeline.sh, prs_clump_score.sh
   susie_finemap.R, two_sample_mr.R
   format_gwas_to_ma.py, map_cojo_to_loci.py, smr_eqtl_validation.py,
   susie_batch.py, extract_graph_table.py, visualize_causal_network.py
 smoketest/                      tracked validated gwas run artifacts (MASLD dry runs)
   MASLD_chr1_slice.ma, MASLD_chr19_locus.{csv,tsv}
-  cojo_out/, susie_out/, synthetic/, agent_test/, agent_test2/
+  cojo_out/, susie_out/, prs_out/, synthetic/, agent_test/, agent_test2/
 docs/
   todo.md                       pre-merge bio status audit (partially stale)
 data/{bio,gwas}/                 gitignored local input data
@@ -362,10 +376,10 @@ src/agentcore/
       prompts/ wes.py, scrna.py
       tools.py, figures.py, export.py
     gwas/                         from agnet2postGWAS
-      agents/v2g_agent.py, mr_agent.py, drug_agent.py
+      agents/v2g_agent.py, mr_agent.py, drug_agent.py, prs_agent.py
       steps/  format_gwas.py, cojo.py, susie.py, smr_eqtl.py,
-              two_sample_mr.py, graph.py, visualize.py, druggability.py
-      prompts/ v2g.py, mr.py, druggability.py
+              two_sample_mr.py, graph.py, visualize.py, druggability.py, prs.py
+      prompts/ v2g.py, mr.py, druggability.py, prs.py
       tools.py
 ```
 
@@ -398,9 +412,12 @@ for scRNA real-mode steps. Mock mode (the default) only needs
 | Environment | Purpose |
 |---|---|
 | `gwasagent` | Python pipeline: `run_pipeline.py`, `server.py`, pure-Python tools (`requirements-gwas.txt`) |
-| `finemap` | `gcta64`, `plink`, R + `susieR`, `TwoSampleMR` — used by `cojo.sh`, `extract_ld_and_run_susie.sh`, `susie_finemap.R`, `run_mr_pipeline.sh` |
+| `finemap` | `gcta64`, `plink`, R + `susieR`, `TwoSampleMR` — used by `cojo.sh`, `extract_ld_and_run_susie.sh`, `susie_finemap.R`, `run_mr_pipeline.sh`, `prs_clump_score.sh` |
 
 Stage agents shell out to `finemap` automatically via `conda run -n finemap ...`.
+The optional Stage PRS adds no new dependency — its `prs_clump_score.sh` uses
+the same `plink` already in the `finemap` env, and no new pip package (the
+`prs` step wrapper is pure stdlib).
 
 ### 6.4 External data sources
 
@@ -426,6 +443,7 @@ reproduce.sh, Snakefile,
 methods.md                     bio only: reproducibility artifacts
 <output_prefix>.ma, .jma.cojo,
 edges.tsv, nodes.tsv, ...       gwas only: intermediate/output files, see CLAUDE.md
+<output_prefix>.profile         gwas only, Stage PRS: per-individual polygenic risk scores
 ```
 
 ## 8. Known limitations
