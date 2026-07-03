@@ -12,8 +12,10 @@ translational pipelines:
   in from the former `agent1poc` project.
 - **GWAS** — a post-GWAS translational pipeline: Stage V2G (format_gwas →
   COJO → SuSiE) → Stage MR (SMR eQTL → two-sample MR → causal network) →
-  Stage Drug (Open Targets druggability), merged in from the former
-  `agnet2postGWAS` (AgentGWAS) project.
+  Stage Drug (Open Targets druggability), with an optional Stage PRS
+  (clumping + thresholding polygenic risk score, `plink --clump`/`--score`)
+  that runs after V2G. Merged in from the former `agnet2postGWAS`
+  (AgentGWAS) project; Stage PRS was added post-merge.
 
 Both pipelines share one core (`src/agentcore/`): LLM provider abstraction,
 async job queue, checkpoint persistence, and the web chat GUI. Domain-specific
@@ -79,11 +81,13 @@ and shared by both domains:
   `dispatch_stage` (gwas) / `generate_report` and forwards everything else
   to `agentcore.tools.dispatch`.
 - **Layer 2 — Workers/Stages** (`agentcore/domains/bio/agents/{wes,scrna}_agent.py`,
-  `agentcore/domains/gwas/agents/{v2g,mr,drug}_agent.py`): each runs its
+  `agentcore/domains/gwas/agents/{v2g,mr,drug,prs}_agent.py`): each runs its
   branch's steps via `start_job`/`check_job_status`/`get_job_result` and
   returns a findings summary. Bio: WES = QC → alignment → mutation_calling;
   scRNA = cell_annotation → clustering → differential_expression → gsea.
-  GWAS stages run sequentially: v2g → mr → drug.
+  GWAS stages run sequentially: v2g → mr → drug. Stage prs is optional and
+  depends only on V2G's `.ma` output, so it can run after v2g independently
+  of mr/drug (`prs` step wraps `tools/prs_clump_score.sh`, `finemap` env).
 - **Layer 3 — Reporter** (`agentcore/agents/reporter.py`): one shared agent
   loop and Markdown→HTML renderer for both domains. Reads `state.json`,
   synthesizes a report via the LLM, then branches on `checkpoint["domain"]`

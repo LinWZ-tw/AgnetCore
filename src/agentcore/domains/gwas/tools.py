@@ -21,7 +21,7 @@ from typing import Any
 
 from agentcore import REPO_ROOT, jobs, state
 
-from .steps import cojo, format_gwas, graph, smr_eqtl, susie, two_sample_mr, visualize, druggability
+from .steps import cojo, format_gwas, graph, prs, smr_eqtl, susie, two_sample_mr, visualize, druggability
 
 STEP_FUNCS = {
     "format_gwas":    format_gwas.run,
@@ -33,6 +33,7 @@ STEP_FUNCS = {
     "extract_graph":  graph.run,
     "visualize":      visualize.run,
     "druggability":   druggability.run,
+    "prs":            prs.run,
 }
 
 _STEP_LIST = ", ".join(STEP_FUNCS)
@@ -61,14 +62,16 @@ DISPATCH_STAGE_TOOL: dict[str, Any] = {
     "description": (
         "Dispatch a post-GWAS pipeline stage to its dedicated sub-agent and wait for it to complete. "
         "Stages run sequentially: v2g first, then mr (using V2G outputs), then drug (using gene list). "
-        "stage must be one of: 'v2g', 'mr', 'drug'. "
+        "prs is an optional stage that builds a polygenic risk score from the V2G-formatted .ma; "
+        "run it after v2g (it needs only the .ma and a PLINK bfile, not mr/drug outputs). "
+        "stage must be one of: 'v2g', 'mr', 'drug', 'prs'. "
         "context is a free-form dict passed to the sub-agent as additional context "
-        "(e.g. {trait, plink_bfile_ref, eqtl_path, sample_size, outcome_gwas_csv})."
+        "(e.g. {trait, plink_bfile_ref, eqtl_path, sample_size, outcome_gwas_csv, target_bfile})."
     ),
     "input_schema": {
         "type": "object",
         "properties": {
-            "stage": {"type": "string", "enum": ["v2g", "mr", "drug"]},
+            "stage": {"type": "string", "enum": ["v2g", "mr", "drug", "prs"]},
             "context": {"type": "object", "description": "Stage-specific parameters and file paths."},
         },
         "required": ["stage"],
@@ -144,7 +147,12 @@ _START_JOB: dict[str, Any] = {
         "  two_sample_mr(cojo_jma_file, outcome_gwas_csv, outcome_name, output_dir)\n"
         "  extract_graph(input_path, output_edges, output_nodes, [trait_trait_mr_config], ...)\n"
         "  visualize(nodes, edges, output_png, output_html, [pip_threshold], [smr_p_threshold])\n"
-        "  druggability(gene_symbols: list[str], output_tsv)"
+        "  druggability(gene_symbols: list[str], output_tsv)\n"
+        "  prs(gwas_ma_file, plink_bfile_ref, output_prefix, [target_bfile], "
+        "[p_threshold], [clump_r2], [clump_kb], [extract_snps]) -- Clumping+Thresholding "
+        "polygenic risk score: LD-clump the .ma against plink_bfile_ref, then plink --score "
+        "target_bfile (defaults to plink_bfile_ref). Pass extract_snps (a SNP-list file) for a "
+        "pathway/gene-restricted score. Writes <output_prefix>.profile"
     ),
     "input_schema": {
         "type": "object",
@@ -181,6 +189,7 @@ _WORKER_TOOLS = [_START_JOB, _CHECK_JOB, _GET_RESULT, _READ_CHECKPOINT,
 
 V2G_TOOLS: list[dict[str, Any]] = _WORKER_TOOLS
 MR_TOOLS: list[dict[str, Any]] = _WORKER_TOOLS
+PRS_TOOLS: list[dict[str, Any]] = _WORKER_TOOLS
 DRUG_TOOLS: list[dict[str, Any]] = [_START_JOB, _CHECK_JOB, _GET_RESULT, _READ_CHECKPOINT, _LIST_ASSETS]
 
 # Whitelist of external data sources this domain may query (configs/external_sources.json).

@@ -15,7 +15,8 @@ pipeline that serves two domains:
     somatic variant calling).
   • Post-GWAS translational pipeline (AgentGWAS): Stage V2G (format_gwas ->
     COJO -> SuSiE) -> Stage MR (SMR eQTL -> two-sample MR -> causal network)
-    -> Stage Drug (Open Targets druggability).
+    -> Stage Drug (Open Targets druggability). An optional Stage PRS
+    (clumping + thresholding polygenic risk score) can run after V2G.
 
 Your responsibilities: inspect the input, determine which domain it belongs
 to, build a structured session plan, await the user's approval, dispatch
@@ -294,6 +295,11 @@ Pipeline overview:
   Stage V2G  -- Variant-to-Gene: format_gwas -> COJO -> SuSiE
   Stage MR   -- Functional evidence: SMR eQTL validation -> two-sample MR -> causal network
   Stage Drug -- Druggability: gene list -> Open Targets tractability + known drugs
+  Stage PRS  -- (optional) Polygenic risk score: clumping + thresholding on the
+                V2G-formatted .ma -> per-individual scores. Runs after V2G; it
+                needs only the .ma and a PLINK bfile, so it is independent of the
+                MR and Drug stages. Offer it when the goal mentions risk
+                prediction, a polygenic score, or scoring a target cohort.
 
 STEP 1 -- INSPECT
 Call inspect_gwas_input on the GWAS file. Confirm:
@@ -355,10 +361,16 @@ Present the plan using this exact structure:
 |---|---|---|
 | 8. Open Targets query | druggability | druggability TSV |
 
+### Stage PRS -- Polygenic Risk Score (include only if requested)
+| Step | Tool | Output |
+|---|---|---|
+| 9. C+T PRS | prs | <output_prefix>.profile (per-individual scores) |
+
 ### Expected outputs
 - results/<run_id>/state.json -- checkpoint
 - results/<run_id>/report/report.md and report.html -- narrative report
 - results/<run_id>/report/network.png and network.html -- causal network
+- results/<run_id>/prs/*.profile -- per-individual PRS (only if Stage PRS ran)
 
 ### Limitations
 <list any steps that will be skipped and why>
@@ -401,6 +413,15 @@ parameters in the context dict.
   dispatch_stage("drug", context={
     "gene_symbols": [...],      # from MR stage read_checkpoint
     "output_tsv": ...,
+  })
+
+  dispatch_stage("prs", context={   # optional; only if a PRS was requested
+    "gwas_ma_file": ...,        # the .ma from V2G (format_gwas output) -- read_checkpoint
+    "plink_bfile_ref": ...,     # LD reference bfile (reuse the one V2G used)
+    "output_prefix": ...,       # e.g. results/<run_id>/prs/<trait>
+    "target_bfile": ...,        # cohort to score; omit to score the LD ref itself (demo only)
+    "p_threshold": ...,         # optional, default 5e-8
+    "extract_snps": ...,        # optional SNP-list file for a pathway-restricted PRS
   })
 
   generate_report()
