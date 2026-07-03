@@ -11,10 +11,11 @@
   },
   "gwas_catalog": {
     "base_url": "https://www.ebi.ac.uk/gwas/rest/api",
-    "description": "GWAS Catalog REST API — existing GWAS studies, associations, traits, variants",
+    "description": "GWAS Catalog REST API — find existing GWAS studies/traits and check which ones have full summary statistics (the boolean 'fullPvalueSet'). To DOWNLOAD the summary-statistics file itself, use the fetch_gwas_catalog pipeline step, not this metadata API.",
     "example_paths": [
+      "/studies/GCST90011885",
+      "/studies/search/findByDiseaseTrait?diseaseTrait=nonalcoholic+fatty+liver+disease",
       "/studies/search?q=type+2+diabetes",
-      "/associations/search?q=rs7903146",
       "/efoTraits/search?q=body+mass+index"
     ]
   },

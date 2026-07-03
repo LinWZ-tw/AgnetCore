@@ -9,7 +9,8 @@ to say which one you want:
   mutation-calling (WES), or cell-annotation → clustering →
   differential-expression → GSEA (scRNA).
 - **GWAS** (from the former `agnet2postGWAS`/AgentGWAS project) — a
-  post-GWAS translational pipeline: Stage V2G (format_gwas → COJO → SuSiE
+  post-GWAS translational pipeline: Stage V2G (optionally fetch summary
+  statistics from the GWAS Catalog → format_gwas → COJO → SuSiE
   fine-mapping) → Stage MR (SMR eQTL validation → optional two-sample MR →
   causal network) → Stage Drug (Open Targets druggability lookup), plus an
   optional Stage PRS (clumping + thresholding polygenic risk score) that
@@ -204,8 +205,10 @@ GWAS input; each stage reads the previous stage's output back out of the
 checkpoint rather than receiving it as a direct argument:
 
 1. **Stage V2G** (`v2g_agent.py`) — variant-to-gene mapping:
-   `format_gwas` (normalize summary stats) → `cojo` (GCTA-COJO conditional
-   analysis) → `susie` (SuSiE fine-mapping over the conditionally
+   (optional `fetch_gwas_catalog` — if the user supplied no summary-statistics
+   file, download the harmonised full sumstats for a GWAS Catalog study
+   accession) → `format_gwas` (normalize summary stats) → `cojo` (GCTA-COJO
+   conditional analysis) → `susie` (SuSiE fine-mapping over the conditionally
    independent signals).
 2. **Stage MR** (`mr_agent.py`) — causal validation:
    `smr_eqtl` (SMR/HEIDI eQTL colocalization on the V2G loci) →
@@ -347,7 +350,8 @@ tools/                          gwas standalone scripts, run as subprocesses
   cojo.sh, extract_ld_and_run_susie.sh, run_mr_pipeline.sh, prs_clump_score.sh
   susie_finemap.R, two_sample_mr.R
   format_gwas_to_ma.py, map_cojo_to_loci.py, smr_eqtl_validation.py,
-  susie_batch.py, extract_graph_table.py, visualize_causal_network.py
+  susie_batch.py, extract_graph_table.py, visualize_causal_network.py,
+  fetch_gwas_catalog.py
 smoketest/                      tracked validated gwas run artifacts (MASLD dry runs)
   MASLD_chr1_slice.ma, MASLD_chr19_locus.{csv,tsv}
   cojo_out/, susie_out/, prs_out/, synthetic/, agent_test/, agent_test2/
@@ -377,7 +381,7 @@ src/agentcore/
       tools.py, figures.py, export.py
     gwas/                         from agnet2postGWAS
       agents/v2g_agent.py, mr_agent.py, drug_agent.py, prs_agent.py
-      steps/  format_gwas.py, cojo.py, susie.py, smr_eqtl.py,
+      steps/  fetch_catalog.py, format_gwas.py, cojo.py, susie.py, smr_eqtl.py,
               two_sample_mr.py, graph.py, visualize.py, druggability.py, prs.py
       prompts/ v2g.py, mr.py, druggability.py, prs.py
       tools.py
@@ -427,6 +431,15 @@ is restricted to a whitelist of base URLs: GTEx (`gtex`), GWAS Catalog
 (`ensembl`), and IEU OpenGWAS (`ieu_opengwas`). Add new sources by editing
 that file — no code changes needed, `agentcore/domains/gwas/tools.py` loads
 it at import time.
+
+`fetch_external_data` returns small JSON *metadata* only (e.g. which GWAS
+Catalog studies exist and whether each has full summary statistics — the
+`fullPvalueSet` flag). To actually **download** a study's summary-statistics
+file, the pipeline uses the `fetch_gwas_catalog` step (Stage V2G,
+`tools/fetch_gwas_catalog.py`): given a study accession it resolves and streams
+the harmonised `*.h.tsv.gz` from the GWAS Catalog FTP into the run's data
+directory, ready for `format_gwas`. This is what lets a run proceed when the
+user supplies only a trait name or accession instead of their own file.
 
 ## 7. Outputs
 

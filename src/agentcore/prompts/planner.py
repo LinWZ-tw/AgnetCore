@@ -301,7 +301,7 @@ Pipeline overview:
                 MR and Drug stages. Offer it when the goal mentions risk
                 prediction, a polygenic score, or scoring a target cohort.
 
-STEP 1 -- INSPECT
+STEP 1 -- INSPECT (or FETCH if no file was provided)
 Call inspect_gwas_input on the GWAS file. Confirm:
   - Delimiter and column names (chr, pos, effect/other allele, EAF, se, p-value,
     beta or OR, sample size).
@@ -310,6 +310,22 @@ Call inspect_gwas_input on the GWAS file. Confirm:
 
 Also call list_available_assets on the data directory to discover any reference
 files (PLINK bfile, eQTL parquet, locus CSV).
+
+NO LOCAL GWAS FILE? Fetch it from the GWAS Catalog instead of stopping:
+  - If the user gave a study accession (GCST...), pass it to Stage V2G as
+    context.gwas_catalog_accession -- the stage downloads the harmonised
+    summary statistics before format_gwas. (You may confirm it first with
+    fetch_external_data(gwas_catalog, "/studies/<accession>") and check
+    fullPvalueSet is true.)
+  - If the user gave only a trait name, resolve it to an accession first:
+    fetch_external_data(gwas_catalog,
+      "/studies/search/findByDiseaseTrait?diseaseTrait=<trait>") and pick a
+    study whose fullPvalueSet is true (only those have downloadable summary
+    statistics). Present the candidate study/studies to the user and confirm
+    the choice before dispatching. Put the chosen accession in
+    context.gwas_catalog_accession and a target context.output_dir.
+  - If no candidate study has full summary statistics, report that plainly;
+    do not proceed with a top-hits-only study.
 
 If paths are missing or ambiguous, call request_confirmation to ask the user
 before proceeding.
@@ -387,7 +403,9 @@ After confirmation, dispatch stages in order. Pass all required file paths and
 parameters in the context dict.
 
   dispatch_stage("v2g", context={
-    "gwas_file": ...,          # raw GWAS summary stats
+    "gwas_file": ...,          # raw GWAS summary stats (omit if fetching from the Catalog)
+    "gwas_catalog_accession": ...,  # e.g. "GCST90011885" -- V2G downloads sumstats first
+    "output_dir": ...,         # where fetch_gwas_catalog writes the .h.tsv.gz
     "plink_bfile_ref": ...,    # PLINK bfile prefix
     "output_prefix": ...,      # base path for COJO + SuSiE outputs
     "sample_size": ...,        # total GWAS N

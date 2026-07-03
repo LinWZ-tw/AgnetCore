@@ -10,8 +10,9 @@ translational pipelines:
 - **Bio** — a WES/scRNA bioinformatics pipeline (cell annotation, clustering,
   differential expression, GSEA; germline/somatic variant calling), merged
   in from the former `agent1poc` project.
-- **GWAS** — a post-GWAS translational pipeline: Stage V2G (format_gwas →
-  COJO → SuSiE) → Stage MR (SMR eQTL → two-sample MR → causal network) →
+- **GWAS** — a post-GWAS translational pipeline: Stage V2G (optional
+  fetch_gwas_catalog → format_gwas → COJO → SuSiE) → Stage MR (SMR eQTL →
+  two-sample MR → causal network) →
   Stage Drug (Open Targets druggability), with an optional Stage PRS
   (clumping + thresholding polygenic risk score, `plink --clump`/`--score`)
   that runs after V2G. Merged in from the former `agnet2postGWAS`
