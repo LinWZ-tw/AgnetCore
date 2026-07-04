@@ -21,9 +21,10 @@ from typing import Any
 
 from agentcore import REPO_ROOT, jobs, state
 
-from .steps import cojo, format_gwas, graph, prs, smr_eqtl, susie, two_sample_mr, visualize, druggability
+from .steps import cojo, fetch_catalog, format_gwas, graph, prs, smr_eqtl, susie, two_sample_mr, visualize, druggability
 
 STEP_FUNCS = {
+    "fetch_gwas_catalog": fetch_catalog.run,
     "format_gwas":    format_gwas.run,
     "cojo":           cojo.run,
     "susie_locus":    susie.run_locus,
@@ -138,6 +139,11 @@ _START_JOB: dict[str, Any] = {
     "description": (
         f"Start a pipeline step asynchronously and return a job_id immediately. Never blocks. "
         f"step must be one of: {_STEP_LIST}. args is a free-form object whose fields depend on the step:\n"
+        "  fetch_gwas_catalog(accession, output_dir) to DOWNLOAD the harmonised full "
+        "summary statistics (.h.tsv.gz) for a GWAS Catalog study, OR "
+        "fetch_gwas_catalog(trait, search_only=true, [size]) to LIST candidate studies "
+        "that have full summary statistics. Use this when the user did not supply a local "
+        "GWAS file; the downloaded .h.tsv.gz then feeds format_gwas.\n"
         "  format_gwas(input_file, output_file, chr_col, pos_col, effect_allele_col, other_allele_col, "
         "eaf_col, se_col, pval_col, [beta_col|or_col], [n|n_col], [snp_id_col], [sep])\n"
         "  cojo(gwas_ma_file, plink_bfile_ref, output_prefix, [orig_sig_csv, phenotype])\n"
@@ -199,7 +205,10 @@ _SOURCES_CONFIG_PATH = REPO_ROOT / "configs" / "external_sources.json"
 
 def _load_sources() -> dict[str, Any]:
     try:
-        return json.loads(_SOURCES_CONFIG_PATH.read_text())
+        # encoding forced: the config carries non-ASCII (em-dashes) and the dev
+        # host's cp950 default would otherwise decode-fail and silently drop the
+        # whole whitelist. Matches the repo-wide "all file I/O is UTF-8" rule.
+        return json.loads(_SOURCES_CONFIG_PATH.read_text(encoding="utf-8"))
     except Exception:
         return {}
 

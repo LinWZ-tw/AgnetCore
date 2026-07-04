@@ -10,8 +10,9 @@ translational pipelines:
 - **Bio** — a WES/scRNA bioinformatics pipeline (cell annotation, clustering,
   differential expression, GSEA; germline/somatic variant calling), merged
   in from the former `agent1poc` project.
-- **GWAS** — a post-GWAS translational pipeline: Stage V2G (format_gwas →
-  COJO → SuSiE) → Stage MR (SMR eQTL → two-sample MR → causal network) →
+- **GWAS** — a post-GWAS translational pipeline: Stage V2G (optional
+  fetch_gwas_catalog → format_gwas → COJO → SuSiE) → Stage MR (SMR eQTL →
+  two-sample MR → causal network) →
   Stage Drug (Open Targets druggability), with an optional Stage PRS
   (clumping + thresholding polygenic risk score, `plink --clump`/`--score`)
   that runs after V2G. Merged in from the former `agnet2postGWAS`
@@ -33,15 +34,13 @@ and the git history for the merge itself.
 ## Commands
 
 ```bash
-# Install (core is always needed; add the extras for the domain(s) you use)
-pip install -r requirements.txt
-pip install -r requirements-bio.txt      # WES/scRNA
-pip install -r requirements-gwas.txt     # post-GWAS
+# Install (one merged file: core + bio + gwas, sectioned so you can trim a domain)
+pip install -r src/requirements.txt
 pip install pertpy                       # only for the bio multimodal demo download
 
-# Download bio demo data
-python download_demo_data.py                 # Kang 2018 multimodal (~100 MB) -> data/bio/demo_multimodal
-python download_demo_data.py --demo scrna     # PBMC 3k single sample (~7 MB) -> data/bio/demo/pbmc3k.h5ad
+# Download bio demo data (run from the repo root)
+python src/download_demo_data.py                 # Kang 2018 multimodal (~100 MB) -> data/bio/demo_multimodal
+python src/download_demo_data.py --demo scrna     # PBMC 3k single sample (~7 MB) -> data/bio/demo/pbmc3k.h5ad
 
 # Full LLM pipeline (needs an API key via env var or --api-key)
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -52,8 +51,8 @@ python run_pipeline.py --input smoketest/MASLD_chr1_slice.ma --trait MASLD --run
 python server.py                   # http://127.0.0.1:8000  (--port to change)
 
 # No-API-key test of the step/job/checkpoint layer (bypasses the LLM loop)
-python test_dispatch.py --data data/bio/demo/pbmc3k.h5ad --run-id demo
-python test_dispatch.py --gwas-file smoketest/MASLD_chr1_slice.ma --run-id gwas-demo
+python src/test_dispatch.py --data data/bio/demo/pbmc3k.h5ad --run-id demo
+python src/test_dispatch.py --gwas-file smoketest/MASLD_chr1_slice.ma --run-id gwas-demo
 ```
 
 There is no formal test suite or linter. `test_dispatch.py` is the closest

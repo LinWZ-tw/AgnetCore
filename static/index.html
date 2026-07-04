@@ -167,7 +167,7 @@
       <input type="text" id="inputPath" placeholder="data/bio/demo_multimodal or smoketest/MASLD_chr1_slice.ma">
       <div class="hint">A data directory / .h5ad / .h5 file (WES or scRNA), or a GWAS summary-statistics file (.tsv/.csv/.ma). Relative to the repo root, or absolute. The agent inspects file content itself — it doesn't trust this label. Leave blank with an existing Run ID to resume from checkpoint.</div>
       <div id="demoHint" class="hint" style="margin-top:8px; display:none; color:var(--warn);">
-        No data yet? Ensure <code>data/bio/demo_multimodal/</code> exists (run <code>download_demo_data.py</code>), or point at <code>smoketest/MASLD_chr1_slice.ma</code> for a GWAS demo.
+        No data yet? Ensure <code>data/bio/demo_multimodal/</code> exists (run <code>python src/download_demo_data.py</code>), or point at <code>smoketest/MASLD_chr1_slice.ma</code> for a GWAS demo.
       </div>
       <button type="button" id="demoBtn" style="margin-top:8px;width:100%;background:var(--panel2);color:var(--scrna);border:1px solid var(--border);font-size:12px;padding:6px 10px;">
         Use bio demo data &nbsp;(data/bio/demo_multimodal/)

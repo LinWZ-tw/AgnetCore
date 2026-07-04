@@ -2,7 +2,7 @@
 """Cheap, no-API-key regression check for agentcore/state.py's `phase`/
 `exec_mode` split and `set_domain` -- the one file that got a real
 behavioral change (not just an import-path rename) during the agent1poc +
-agnet2postGWAS merge. Run directly: `python test_state.py`.
+agnet2postGWAS merge. Run directly: `python src/test_state.py`.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import sys
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from agentcore import state  # noqa: E402
 
