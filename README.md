@@ -55,6 +55,14 @@ export ANTHROPIC_API_KEY=sk-ant-...   # Claude (default provider)
 # export OPENAI_API_KEY=sk-...        # OpenAI / OpenAI-compatible
 ```
 
+> **Default data location:** drop your input files under `data/` — the
+> repository ships the empty skeleton (`data/bio/`, `data/gwas/`) so no
+> `mkdir` step is needed after cloning.  The `data/` tree is git-ignored
+> (content never committed); only the directory placeholders are tracked.
+> Use `data/bio/` for WES fastq archives / `.h5ad` scRNA files and
+> `data/gwas/` for GWAS summary-statistics files (`.ma`, `.tsv`, `.csv`,
+> optionally `.gz`).
+
 ### 1.1 Option A — Web GUI
 
 ```bash
@@ -116,13 +124,13 @@ are domain-specific.
 ### 2.1 Agent layers
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────────────┐
 │  Layer 0 — Entrypoints                                                  │
 │  server.py (+ static/index.html, browser chat)   or   run_pipeline.py   │
 │  server.py wraps each run in a long-lived agentcore.session.AgentSession│
 │  (background thread); run_pipeline.py drives agentcore.agents.planner   │
 │  .run() directly, once, to completion.                                  │
-└────────────────────────────┬─────────────────────────────────────────-─┘
+└────────────────────────────┬────────────────────────────────────────────┘
                               │ goal + input_path (+ optional domain hint)
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
@@ -159,16 +167,16 @@ are domain-specific.
             └───────────────────────────┴──────────────────────────────┘
                                         │ full checkpoint (state.json)
                                         ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│  Layer 3 — Reporter   agentcore/agents/reporter.py                      │
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Layer 3 — Reporter   agentcore/agents/reporter.py                       │
 │  • Shared agent loop + Markdown→HTML rendering for both domains          │
 │  • Reads checkpoint["domain"] to pick the domain-specific extra section: │
 │    - bio:  domains/bio/figures.py (PNG/Plotly gallery) +                 │
 │            domains/bio/export.py (reproduce.sh, Snakefile, methods.md)   │
 │    - gwas: links network.png/network.html already produced by the        │
 │            `visualize` step (run earlier, inside the mr_agent stage)     │
-│  • Writes report/report.md + report/report.html                         │
-└────────────────────────────────────────────────────────────────────────┘
+│  • Writes report/report.md + report/report.html                          │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Bio pipeline workflow (from `agent1poc`)
@@ -349,7 +357,8 @@ smoketest/                      tracked validated gwas run artifacts (MASLD dry 
   cojo_out/, susie_out/, prs_out/, synthetic/, agent_test/, agent_test2/
 docs/
   todo.md                       pre-merge bio status audit (partially stale)
-data/{bio,gwas}/                 gitignored local input data
+data/bio/                        default location for bio inputs (WES fastq, .h5ad scRNA); content gitignored
+data/gwas/                       default location for GWAS summary-stats (.ma/.tsv/.csv); content gitignored
 results/                        gitignored run outputs
 src/
   requirements.txt              merged deps (core + bio + gwas, sectioned)
@@ -466,6 +475,9 @@ edges.tsv, nodes.tsv, ...       gwas only: intermediate/output files, see CLAUDE
 | Mutational signature analysis (SigProfiler) | Planned |
 | Copy number variation (CNV) | Planned |
 | GWAS deterministic (no-API-key) test coverage | Limited to pure-Python steps; conda-env-dependent steps covered by `smoketest/` only |
+| Bulk RNA-seq input | Not recognized by `inspect_data_source`/`detect.py` — only scRNA (`.h5`/`.h5ad`) and WES fastq are supported bio inputs |
+| Cross-domain bio → GWAS hand-off | No automated hand-off from a bio run's DEG/pathway output into a GWAS run's `smr_eqtl`/`two_sample_mr` gene filter — must be passed manually today |
+| Predictive multi-variant panel construction | Not implemented — SMR/two-sample MR produce gene-by-gene causal estimates, not a jointly-fit predictive panel (e.g. penalized regression, PRS) with a validated accuracy metric |
 
 See `CLAUDE.md` for architecture details and merge-specific rationale, and
 `docs/todo.md` for pre-merge bio status notes (partially stale).

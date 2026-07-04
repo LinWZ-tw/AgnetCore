@@ -4,7 +4,17 @@ results/
 # Local input data (symlinks to machine-specific storage, downloaded demo
 # files, raw GWAS files). smoketest/ and configs/ are deliberately NOT
 # ignored -- they are git-tracked validated fixtures / config, not run output.
-data/
+# The directory skeleton (data/bio/, data/gwas/) is tracked via .gitkeep so
+# clone-and-run works without a manual mkdir step.
+data/**
+!data/bio/
+!data/bio/.gitkeep
+!data/gwas/
+!data/gwas/.gitkeep
+
+# Locally-downloaded machine-specific tool binaries (e.g. plink2.exe) -- not
+# source, not portable across OS/arch, never committed.
+bin/
 
 # Python
 __pycache__/
