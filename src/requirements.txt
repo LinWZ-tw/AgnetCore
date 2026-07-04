@@ -1,0 +1,35 @@
+# Merged dependencies for the translational-agent framework.
+#
+# Previously split across three files (requirements.txt = core,
+# requirements-bio.txt, requirements-gwas.txt); merged here into one. The
+# per-domain sections are preserved below so you can still comment out a domain
+# you do not use. Install from the repo root with:
+#
+#     pip install -r src/requirements.txt
+#
+# GWAS real-mode steps additionally need the gcta64 / plink / R `finemap` conda
+# env (and the `gwasagent` env), which are NOT pip-installable -- see the
+# README "GWAS conda environments" section. The optional Stage PRS adds no new
+# pip package (plink already lives in the finemap env).
+
+# ── Core (always required: LLM providers + Planner routing) ──────────────────
+anthropic>=0.111.0
+openai>=1.0.0
+
+# ── Bio domain (WES / scRNA) ─────────────────────────────────────────────────
+matplotlib>=3.7.0          # report figures (Agg backend); shared with the GWAS domain
+scanpy>=1.9.0
+anndata>=0.9.0
+h5py>=3.8.0
+# pertpy is installed separately, only for the multimodal demo download:
+#   pip install pertpy
+
+# ── GWAS domain (post-GWAS: V2G / MR / Drug / PRS) ───────────────────────────
+pandas
+numpy
+scipy
+openpyxl
+pyarrow
+pyyaml
+networkx
+pyvis

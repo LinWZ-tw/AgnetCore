@@ -15,9 +15,9 @@ Two demo modes:
     as data/bio/demo/pbmc3k.h5ad.  Use this to quickly try the scRNA branch of
     the pipeline on a single sample (no pertpy needed).
 
-Usage:
-    python download_demo_data.py                  # multimodal demo (Kang 2018, default)
-    python download_demo_data.py --demo scrna     # single-sample scRNA (PBMC 3k)
+Usage (run from the repo root so data/ lands in the right place):
+    python src/download_demo_data.py                  # multimodal demo (Kang 2018, default)
+    python src/download_demo_data.py --demo scrna     # single-sample scRNA (PBMC 3k)
 """
 from __future__ import annotations
 

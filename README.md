@@ -45,9 +45,7 @@ merge-specific rationale behind individual design decisions.
 
 ```bash
 # 1. Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-bio.txt      # for the WES/scRNA pipeline
-pip install -r requirements-gwas.txt     # for the post-GWAS pipeline
+pip install -r src/requirements.txt      # core + bio + gwas (one merged file)
 pip install pertpy                       # only needed for the bio multimodal demo download
 
 # 2. Set your API key
@@ -76,7 +74,7 @@ messages into the chat at any time, even while the agent is mid-run.
 
 ```bash
 # Bio demo (downloads a Kang 2018 case-control scRNA + mock WES cohort)
-python download_demo_data.py
+python src/download_demo_data.py
 python run_pipeline.py --input data/bio/demo_multimodal --run-id kang-demo
 
 # GWAS demo (uses the tracked MASLD chr1 smoketest slice)
@@ -333,16 +331,10 @@ which agent layer holds it.
 CLAUDE.md                      architecture + merge rationale for Claude Code
 README.md                      this file
 .gitignore
-requirements.txt              core deps (anthropic, openai)
-requirements-bio.txt          bio extras (matplotlib, scanpy, anndata, h5py)
-requirements-gwas.txt         gwas extras (pandas, numpy, scipy, networkx, pyvis, ...)
-download_demo_data.py         downloads bio demo datasets
 run_pipeline.py                CLI entrypoint: goal + input -> planner, runs to completion
 server.py                      web server: GUI <-> planner agent session
 static/
   index.html                   browser GUI (provider picker, API key, input path, chat panel)
-test_dispatch.py                no-LLM step-library test harness for both domains
-test_state.py                   unit tests for checkpoint persistence
 configs/
   external_sources.json         whitelist of external APIs for fetch_external_data
   example_run.md                worked example transcript
@@ -359,6 +351,11 @@ docs/
   todo.md                       pre-merge bio status audit (partially stale)
 data/{bio,gwas}/                 gitignored local input data
 results/                        gitignored run outputs
+src/
+  requirements.txt              merged deps (core + bio + gwas, sectioned)
+  download_demo_data.py         downloads bio demo datasets
+  test_dispatch.py              no-LLM step-library test harness for both domains
+  test_state.py                 unit tests for checkpoint persistence
 src/agentcore/
   __init__.py                   REPO_ROOT, RESULT_DIR, TOOLS_DIR, conda env constants
   providers.py                   LLM provider abstraction (Anthropic/OpenAI/Gemini/Grok)
@@ -406,16 +403,16 @@ tried automatically if the chosen model returns HTTP 429/503/529.
 
 ### 6.2 Bio real-mode tools
 
-Not in `requirements-bio.txt`: `bwa`, `gatk4`, `picard`, `samtools`,
+Not in `src/requirements.txt`: `bwa`, `gatk4`, `picard`, `samtools`,
 `bcftools`, `fastp` in a `wes` conda env; `harmonypy`, `leidenalg`, `gseapy`
-for scRNA real-mode steps. Mock mode (the default) only needs
-`requirements-bio.txt`.
+for scRNA real-mode steps. Mock mode (the default) only needs the bio section
+of `src/requirements.txt`.
 
 ### 6.3 GWAS conda environments
 
 | Environment | Purpose |
 |---|---|
-| `gwasagent` | Python pipeline: `run_pipeline.py`, `server.py`, pure-Python tools (`requirements-gwas.txt`) |
+| `gwasagent` | Python pipeline: `run_pipeline.py`, `server.py`, pure-Python tools (`src/requirements.txt`) |
 | `finemap` | `gcta64`, `plink`, R + `susieR`, `TwoSampleMR` — used by `cojo.sh`, `extract_ld_and_run_susie.sh`, `susie_finemap.R`, `run_mr_pipeline.sh`, `prs_clump_score.sh` |
 
 Stage agents shell out to `finemap` automatically via `conda run -n finemap ...`.

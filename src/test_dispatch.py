@@ -13,14 +13,14 @@ report. Pass --api-key (or set ANTHROPIC_API_KEY) to generate it; omit to
 skip it.
 
 Bio examples:
-    python test_dispatch.py --data data/bio/demo/pbmc3k.h5ad --run-id demo
-    python test_dispatch.py --data data/bio/demo/pbmc3k.h5ad --run-id demo --api-key sk-ant-...
-    python test_dispatch.py --data data/bio/scRNA_AML --all --limit 5
-    python test_dispatch.py --data data/bio/WES_OC_fasta
+    python src/test_dispatch.py --data data/bio/demo/pbmc3k.h5ad --run-id demo
+    python src/test_dispatch.py --data data/bio/demo/pbmc3k.h5ad --run-id demo --api-key sk-ant-...
+    python src/test_dispatch.py --data data/bio/scRNA_AML --all --limit 5
+    python src/test_dispatch.py --data data/bio/WES_OC_fasta
 
 GWAS example (pure-Python step only -- format_gwas; steps that shell out to
 the `finemap` conda env are not covered here, see smoketest/ instead):
-    python test_dispatch.py --gwas-format-test --run-id gwas-demo
+    python src/test_dispatch.py --gwas-format-test --run-id gwas-demo
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from agentcore import state  # noqa: E402
 from agentcore.domains.bio.tools import dispatch as bio_dispatch  # noqa: E402
