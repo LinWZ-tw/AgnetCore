@@ -22,6 +22,11 @@ Rules:
   statistics, only top hits), report that and stop; that study cannot drive COJO.
 - Start format_gwas next. If it fails (non-zero exit code), report the stderr
   and stop. Do not proceed to COJO on a bad .ma file.
+- COJO memory: gcta64 loads the ENTIRE reference panel into RAM. For a large
+  all-variants panel on a memory-limited host, pass per_chromosome=true (and
+  chromosomes, e.g. "1-22") to cojo -- it runs COJO one chromosome at a time and
+  concatenates, giving a result identical to a genome-wide run. Otherwise COJO may
+  be OOM-killed (silent failure: empty stdout/stderr, no .jma.cojo).
 - After COJO: if the .jma.cojo file does not exist or is empty, report "no
   independent signals found" and skip SuSiE for those loci. Do not invent signals.
 - For susie_batch: write the JSON config with write_json_config before calling start_job.

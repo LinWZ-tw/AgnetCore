@@ -8,6 +8,8 @@ A single LLM-orchestrated **Planner** agent routes between two translational bio
 
 Drive it from a browser chat UI (`server.py`) or an interactive CLI (`run_pipeline.py`). Both talk to the same Planner/Worker/Reporter agent stack and write to the same `results/<run_id>/` checkpoint, so a run started on one can be resumed from the other. Supports Claude (Anthropic), Google Gemini, xAI Grok, and any OpenAI-compatible endpoint (OpenAI, Ollama, vLLM, Groq, etc.).
 
+A third entrypoint, `mcp_server.py`, exposes the individual pipeline steps as [Model Context Protocol](https://modelcontextprotocol.io) tools so any MCP-capable client — the `claude` CLI / Claude Code, Codex, Cursor, etc. — can drive them directly, without the Planner LLM loop or a provider API key. See [§1.4](#14-option-c--mcp-server).
+
 This repository merges two formerly-separate projects (`agent1poc` and `agnet2postGWAS`/AgentGWAS) that shared nearly identical infrastructure (provider abstraction, job queue, checkpointing, chat session, report rendering) into one framework, with the domain-specific pipeline code kept cleanly separated under `agentcore/domains/`. See `CLAUDE.md` for the merge-specific rationale behind individual design decisions.
 
 ## Contents
@@ -63,6 +65,34 @@ python run_pipeline.py --input smoketest/MASLD_chr1_slice.ma --trait MASLD --run
 ### 1.3 Resuming a run
 
 Both entrypoints are checkpoint-aware. Re-running `run_pipeline.py` with the same `--run-id` (or reconnecting to the same `run_id` in the GUI) loads `results/<run_id>/state.json`, summarizes what is already recorded, and tells the model to skip completed steps — this is what lets a long GWAS run or an interrupted GUI session pick back up instead of restarting from scratch.
+
+### 1.4 Option C — MCP server
+
+Expose the pipeline steps to any MCP-capable LLM client (Claude Code / the `claude` CLI, Codex, Cursor, Antigravity, ...) so it can run them directly as tool calls. This is a thin façade over each domain's `dispatch()`, so an MCP-launched step still runs on the shared job queue and is checkpointed to `results/<run_id>/state.json` exactly like a Planner-launched one — but it needs **no provider API key**, because the *client's* model does the orchestration.
+
+```bash
+pip install "mcp[cli]"             # one extra dependency (also in src/requirements.txt)
+python mcp_server.py --selftest    # exercise the tools without an MCP client
+python mcp_server.py               # serve over stdio (what a client launches)
+```
+
+Register it with the `claude` CLI (run from the repo root):
+
+```bash
+claude mcp add agentcore -- python /abs/path/to/mcp_server.py
+```
+
+or, equivalently, in a client config file (`.mcp.json`, Claude Desktop, Codex, and Cursor all use this shape):
+
+```json
+{
+  "mcpServers": {
+    "agentcore": { "command": "python", "args": ["/abs/path/to/mcp_server.py"] }
+  }
+}
+```
+
+The server exposes eight tools: `list_capabilities` (enumerate domains + steps), `inspect_input` (classify a path; `bio`/`gwas`/`auto`), `list_assets` (glob a directory), `run_step` (run one step to completion, blocking), `start_step` + `check_job` + `get_job_result` (the async poll pattern), and `read_checkpoint` (a run's recorded progress). Bio steps accept `args.mode = "mock"` (default, deterministic) or `"real"`; GWAS heavy steps still need the `finemap` conda env ([§6.3](#63-gwas-conda-environments)). Only the step-level primitives are exposed, not the full Planner pipeline, so an external client drives cheap, deterministic (in mock mode) building blocks rather than an API-key-consuming agent loop.
 
 ## 2. Architecture
 
@@ -211,6 +241,7 @@ README.md                      this file
 .gitignore
 run_pipeline.py                CLI entrypoint: goal + input -> planner, runs to completion
 server.py                      web server: GUI <-> planner agent session
+mcp_server.py                  MCP server: exposes bio/gwas steps as tools for external LLM clients
 static/
   index.html                   browser GUI (provider picker, API key, input path, chat panel)
 configs/

@@ -1,0 +1,5 @@
+# Shell/R scripts under tools/ are executed inside WSL/Linux (see
+# src/agentcore/domains/gwas/steps/__init__.py). CRLF makes bash fail with
+# "$'\r': command not found", so force LF regardless of the checkout platform.
+*.sh text eol=lf
+*.R text eol=lf

@@ -16,6 +16,12 @@
 anthropic>=0.111.0
 openai>=1.0.0
 
+# ── Optional: MCP server (mcp_server.py) ─────────────────────────────────────
+# Exposes the bio/gwas pipeline steps as MCP tools so external LLM clients
+# (Claude Code / `claude` CLI, Codex, Cursor, ...) can call them directly.
+# Only needed if you run `python mcp_server.py`; not required by the Planner.
+mcp>=1.0.0                 # `pip install "mcp[cli]"` if you also want the `mcp` dev CLI
+
 # ── Bio domain (WES / scRNA) ─────────────────────────────────────────────────
 matplotlib>=3.7.0          # report figures (Agg backend); shared with the GWAS domain
 scanpy>=1.9.0
