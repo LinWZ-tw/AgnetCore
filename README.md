@@ -41,11 +41,35 @@ export ANTHROPIC_API_KEY=sk-ant-...   # Claude (default provider)
 
 ### 1.1 Option A — Web GUI
 
+**One-click launch (no terminal command to type).** Double-click the launcher for your platform:
+
+| Platform | Launcher |
+|---|---|
+| Windows | `run_gui.bat` |
+| macOS / Linux | `run_gui.command` (first time only, if double-click is blocked: `chmod +x run_gui.command`) |
+
+The launcher `cd`s to the repo root, locates your Python interpreter (the `py` launcher or `python` on Windows; `python3`/`python` elsewhere), and runs `python server.py --open`. A console window appears — this *is* the server, so keep it open while you work and close it (or press <kbd>Ctrl+C</kbd>) to stop. A browser tab opens automatically at <http://127.0.0.1:8000/>. If Python is not installed, the launcher prints an install hint instead of failing silently.
+
+**Or launch manually:**
+
 ```bash
-python server.py    # open http://127.0.0.1:8000
+python server.py            # then open http://127.0.0.1:8000
+python server.py --open     # also opens the browser for you
+python server.py --port 8080 --host 0.0.0.0   # change port / bind all interfaces
 ```
 
-Fill in the sidebar: provider, API key, and an **Input path** — a data directory / `.h5ad` / `.h5` file for bio, or a GWAS summary-statistics file (`.tsv`/`.csv`/`.ma`, optionally `.gz`) for gwas. Optionally add free-text notes (study design, trait name, sample metadata) — these are appended to the agent's first message as extra context. The Planner inspects the input itself and picks the right pipeline. A green **"Open report"** button appears in the sidebar once `report.html` exists; you can also type follow-up messages into the chat at any time, even while the agent is mid-run.
+**Using the GUI.** Fill in the sidebar: provider, API key, and an **Input path** — a data directory / `.h5ad` / `.h5` file for bio, or a GWAS summary-statistics file (`.tsv`/`.csv`/`.ma`, optionally `.gz`) for gwas. Optionally add free-text notes (study design, trait name, sample metadata) — these are appended to the agent's first message as extra context. The Planner inspects the input itself and picks the right pipeline. A green **"Open report"** button appears in the sidebar once `report.html` exists; you can also type follow-up messages into the chat at any time, even while the agent is mid-run.
+
+**How it works under the hood.** The GUI is deliberately a thin, dependency-free layer over the same agent stack the CLI uses:
+
+1. **Static page + stdlib server.** `static/index.html` is a single self-contained file (no build step, no external assets). `server.py` is a stdlib `ThreadingHTTPServer` — no Flask/FastAPI — that serves that page and a small JSON API. The vendor SDKs (`anthropic`, `openai`, ...) are imported lazily inside `providers.py`, only once a session actually selects that provider.
+2. **Start a run.** Clicking **Start run** POSTs your settings to `/api/sessions`, which constructs an `agentcore.session.AgentSession`. That wraps the Planner in a **background thread** with an inbox queue, so the run proceeds asynchronously while the browser stays responsive. Constructing the provider happens synchronously first, so an invalid key or missing SDK surfaces immediately as an error in the UI rather than failing later inside the thread.
+3. **Live transcript by polling.** The page polls `GET /api/sessions/<run_id>/events?since=<n>` on a short interval (backing off from 1 s to 5 s when idle, snapping back to 1 s on new activity). Each turn the session emits typed events — `thinking`, `text`, `tool_call`, `tool_result`, `system`, `error` — which the page renders as chat bubbles, colour-coded per agent (WES/scRNA/V2G/MR/Drug/Reporter), with a dynamically-built per-stage progress strip.
+4. **Interruptible chat.** Unlike the one-shot CLI, the session loops back to a `waiting_for_user` state after each turn instead of exiting. Messages you type POST to `/api/sessions/<run_id>/message` and are appended to the *same* live provider conversation — so you can correct the plan, add metadata, or redirect mid-run without restarting.
+5. **Same checkpoint, so it resumes.** The session writes to `results/<run_id>/state.json` exactly like the CLI. Reconnecting with the same **Run ID** either re-attaches to the still-running in-process session, or (after a server restart) resumes from the on-disk checkpoint — see [§1.3](#13-resuming-a-run). The **View checkpoint** button reads that `state.json` back through `/api/sessions/<run_id>/state`.
+6. **API-key handling.** Keys are POSTed from the browser to this local server process, held only in memory, and forwarded straight to the chosen SDK — never logged or written to disk (see [§6.1](#61-llm-providers)).
+
+Because the browser sandbox cannot execute Python, spawn the bioinformatics subprocesses, or read arbitrary local files, the GUI is a front end to a *local server process* — it is not a standalone page you can open by itself via `file://`. The launcher exists precisely to start that process for you without a typed command.
 
 ### 1.2 Option B — CLI
 
@@ -236,62 +260,64 @@ Every LLM agent in this framework only ever sees tool schemas — it never calls
 ## 5. File layout
 
 ```
-CLAUDE.md                      architecture + merge rationale for Claude Code
-README.md                      this file
+CLAUDE.md                        architecture + merge rationale for Claude Code
+README.md                        this file
 .gitignore
-run_pipeline.py                CLI entrypoint: goal + input -> planner, runs to completion
-server.py                      web server: GUI <-> planner agent session
-mcp_server.py                  MCP server: exposes bio/gwas steps as tools for external LLM clients
+run_pipeline.py                  CLI entrypoint: goal + input -> planner, runs to completion
+server.py                        web server: GUI <-> planner agent session (--open launches the browser)
+run_gui.bat                      Windows one-click launcher: runs `server.py --open`
+run_gui.command                  macOS/Linux one-click launcher: runs `server.py --open`
+mcp_server.py                    MCP server: exposes bio/gwas steps as tools for external LLM clients
 static/
-  index.html                   browser GUI (provider picker, API key, input path, chat panel)
+└─ index.html                    browser GUI (provider picker, API key, input path, chat panel)
 configs/
-  external_sources.json         whitelist of external APIs for fetch_external_data
-  example_run.md                worked example transcript
-tools/                          gwas standalone scripts, run as subprocesses
-  cojo.sh, extract_ld_and_run_susie.sh, run_mr_pipeline.sh, prs_clump_score.sh
-  susie_finemap.R, two_sample_mr.R
-  format_gwas_to_ma.py, map_cojo_to_loci.py, smr_eqtl_validation.py,
-  susie_batch.py, extract_graph_table.py, visualize_causal_network.py,
-  fetch_gwas_catalog.py
-smoketest/                      tracked validated gwas run artifacts (MASLD dry runs)
-  MASLD_chr1_slice.ma, MASLD_chr19_locus.{csv,tsv}
-  cojo_out/, susie_out/, prs_out/, synthetic/, agent_test/, agent_test2/
+├─ external_sources.json         whitelist of external APIs for fetch_external_data
+└─ example_run.md                worked example transcript
+tools/                           gwas standalone scripts, run as subprocesses
+├─ cojo.sh, extract_ld_and_run_susie.sh, run_mr_pipeline.sh, prs_clump_score.sh
+├─ susie_finemap.R, two_sample_mr.R
+├─ format_gwas_to_ma.py, map_cojo_to_loci.py, smr_eqtl_validation.py,
+├─ susie_batch.py, extract_graph_table.py, visualize_causal_network.py,
+└─ fetch_gwas_catalog.py
+smoketest/                       tracked validated gwas run artifacts (MASLD dry runs)
+├─ MASLD_chr1_slice.ma, MASLD_chr19_locus.{csv,tsv}
+└─ cojo_out/, susie_out/, prs_out/, synthetic/, agent_test/, agent_test2/
 docs/
-  todo.md                       pre-merge bio status audit (partially stale)
+└─ todo.md                       pre-merge bio status audit (partially stale)
 data/bio/                        default location for bio inputs (WES fastq, .h5ad scRNA); content gitignored
 data/gwas/                       default location for GWAS summary-stats (.ma/.tsv/.csv); content gitignored
-results/                        gitignored run outputs
+results/                         gitignored run outputs
 src/
-  requirements.txt              merged deps (core + bio + gwas, sectioned)
-  download_demo_data.py         downloads bio demo datasets
-  test_dispatch.py              no-LLM step-library test harness for both domains
-  test_state.py                 unit tests for checkpoint persistence
+├─ requirements.txt              merged deps (core + bio + gwas, sectioned)
+├─ download_demo_data.py         downloads bio demo datasets
+├─ test_dispatch.py              no-LLM step-library test harness for both domains
+└─ test_state.py                 unit tests for checkpoint persistence
 src/agentcore/
-  __init__.py                   REPO_ROOT, RESULT_DIR, TOOLS_DIR, conda env constants
-  providers.py                   LLM provider abstraction (Anthropic/OpenAI/Gemini/Grok)
-  jobs.py                        background async job queue
-  session.py                     web chat session wrapper
-  state.py                       checkpoint persistence (results/<run_id>/state.json)
-  tools.py                       shared tool schemas + unified Planner dispatch
-  agents/
-    planner.py                   Layer 1: domain detection, plan, dispatch, report trigger
-    reporter.py                  Layer 3: shared report synthesis + rendering
-  prompts/
-    planner.py                   merged system prompt (bio + gwas routing sections)
-    reporter.py                  merged reporter prompt (domain-conditional sections)
-  domains/
-    bio/                          from agent1poc
-      agents/wes_agent.py, scrna_agent.py
-      steps/  detect.py, qc.py, alignment.py, mutation.py,
-              annotation.py, clustering.py, diffexp.py, gsea.py
-      prompts/ wes.py, scrna.py
-      tools.py, figures.py, export.py
-    gwas/                         from agnet2postGWAS
-      agents/v2g_agent.py, mr_agent.py, drug_agent.py, prs_agent.py
-      steps/  fetch_catalog.py, format_gwas.py, cojo.py, susie.py, smr_eqtl.py,
-              two_sample_mr.py, graph.py, visualize.py, druggability.py, prs.py
-      prompts/ v2g.py, mr.py, druggability.py, prs.py
-      tools.py
+├─ __init__.py                   REPO_ROOT, RESULT_DIR, TOOLS_DIR, conda env constants
+├─ providers.py                  LLM provider abstraction (Anthropic/OpenAI/Gemini/Grok)
+├─ jobs.py                       background async job queue
+├─ session.py                    web chat session wrapper
+├─ state.py                      checkpoint persistence (results/<run_id>/state.json)
+├─ tools.py                      shared tool schemas + unified Planner dispatch
+├─ agents/
+|  ├─ planner.py                 Layer 1: domain detection, plan, dispatch, report trigger
+|  └─ reporter.py                Layer 3: shared report synthesis + rendering
+├─ prompts/
+|  ├─ planner.py                 merged system prompt (bio + gwas routing sections)
+|  └─ reporter.py                merged reporter prompt (domain-conditional sections)
+└─ domains/
+   ├─ bio/                       from agent1poc
+   |  ├─ agents/  wes_agent.py, scrna_agent.py
+   |  ├─ steps/   detect.py, qc.py, alignment.py, mutation.py,
+   |  |           annotation.py, clustering.py, diffexp.py, gsea.py
+   |  ├─ prompts/ wes.py, scrna.py
+   |  └─ tools.py, figures.py, export.py
+   └─ gwas/                      from agnet2postGWAS
+      ├─ agents/  v2g_agent.py, mr_agent.py, drug_agent.py, prs_agent.py
+      ├─ steps/   fetch_catalog.py, format_gwas.py, cojo.py, susie.py, smr_eqtl.py,
+      |           two_sample_mr.py, graph.py, visualize.py, druggability.py, prs.py
+      ├─ prompts/ v2g.py, mr.py, druggability.py, prs.py
+      └─ tools.py
 ```
 
 ## 6. Requirements

@@ -247,10 +247,31 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--open",
+        action="store_true",
+        help="open the GUI in the default web browser once the server is listening "
+        "(used by the run_gui.bat / run_gui.command launchers)",
+    )
     args = parser.parse_args()
 
+    # Bind first: ThreadingHTTPServer starts listening in its constructor, so a
+    # browser opened right after this point connects successfully even before
+    # serve_forever() begins accepting.
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"=== merged agent framework GUI on http://{args.host}:{args.port}/ (Ctrl+C to stop) ===")
+
+    # 0.0.0.0 means "all interfaces" for binding, but is not a browsable host;
+    # point the browser at loopback in that case.
+    browse_host = "127.0.0.1" if args.host in ("0.0.0.0", "") else args.host
+    url = f"http://{browse_host}:{args.port}/"
+    print(f"=== merged agent framework GUI on {url} (Ctrl+C to stop) ===")
+
+    if args.open:
+        import threading
+        import webbrowser
+
+        threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
