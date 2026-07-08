@@ -42,3 +42,7 @@ env/
 
 # Claude Code local (per-user) settings -- not meant to be shared/committed
 .claude/settings.local.json
+
+# Agent-facing working notes, kept local rather than shared. The portable,
+# reader-facing methodology + design rationale now lives in soul.md instead.
+CLAUDE.md
