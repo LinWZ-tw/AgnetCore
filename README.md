@@ -2,15 +2,15 @@
 
 A single LLM-orchestrated **Planner** agent routes between two translational bioinformatics pipelines depending on what data you hand it — you never have to say which one you want:
 
-- **Bio**  — whole-exome sequencing (WES) and single-cell RNA-seq (scRNA) analysis: QC → alignment → mutation-calling (WES), or cell-annotation → clustering → differential-expression → GSEA (scRNA).
-  
+- **(Bio) WES** — whole-exome sequencing germline analysis: QC → alignment → mutation-calling.
+
+- **(Bio) scRNA** — single-cell RNA-seq analysis: cell-annotation → clustering → differential-expression → GSEA.
+
 - **GWAS** — a post-GWAS translational pipeline: Stage V2G (optionally fetch summary statistics from the GWAS Catalog → format_gwas → COJO → SuSiE fine-mapping) → Stage MR (SMR eQTL validation → optional two-sample MR → causal network) → Stage Drug (Open Targets druggability lookup), plus an optional Stage PRS (clumping + thresholding polygenic risk score) that runs after V2G.
 
 Drive it from a browser chat UI (`server.py`) or an interactive CLI (`run_pipeline.py`). Both talk to the same Planner/Worker/Reporter agent stack and write to the same `results/<run_id>/` checkpoint, so a run started on one can be resumed from the other. Supports Claude (Anthropic), Google Gemini, xAI Grok, and any OpenAI-compatible endpoint (OpenAI, Ollama, vLLM, Groq, etc.).
 
 A third entrypoint, `mcp_server.py`, exposes the individual pipeline steps as [Model Context Protocol](https://modelcontextprotocol.io) tools so any MCP-capable client — the `claude` CLI / Claude Code, Codex, Cursor, etc. — can drive them directly, without the Planner LLM loop or a provider API key. See [§1.4](#14-option-c--mcp-server).
-
-This repository merges two formerly-separate projects (`agent1poc` and `agnet2postGWAS`/AgentGWAS) that shared nearly identical infrastructure (provider abstraction, job queue, checkpointing, chat session, report rendering) into one framework, with the domain-specific pipeline code kept cleanly separated under `agentcore/domains/`. See `CLAUDE.md` for the merge-specific rationale behind individual design decisions.
 
 ## Contents
 
@@ -26,12 +26,18 @@ This repository merges two formerly-separate projects (`agent1poc` and `agnet2po
 ## 1. Quick start
 
 ```bash
-# 1. Install dependencies
+# 1. Get the code
+git clone https://github.com/LinWZ-tw/AgnetCore.git
+cd AgnetCore
+# No git? Download the ZIP from the GitHub page ("Code" -> "Download ZIP"),
+# unzip it, and cd into the extracted folder instead.
+
+# 2. Install dependencies
 pip install -r src/requirements.txt      # core + bio + gwas (one merged file)
 pip install pertpy                       # only needed for the bio multimodal demo download
 
-# 2. Set your API key
-export ANTHROPIC_API_KEY=sk-ant-...   # Claude (default provider)
+# 3. Set your API key
+export ANTHROPIC_API_KEY=sk-ant-...   # Claude
 # export GEMINI_API_KEY=AIza...       # Gemini
 # export GROK_API_KEY=xai-...         # Grok
 # export OPENAI_API_KEY=sk-...        # OpenAI / OpenAI-compatible
@@ -132,8 +138,8 @@ Three agent layers sit on top of a small set of shared infrastructure modules. T
 │  (background thread); run_pipeline.py drives agentcore.agents.planner   │
 │  .run() directly, once, to completion.                                  │
 └────────────────────────────┬────────────────────────────────────────────┘
-                              │ goal + input_path (+ optional domain hint)
-                              ▼
+                             │ goal + input_path (+ optional domain hint)
+                             ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │  Layer 1 — Planner   agentcore/agents/planner.py                                    │
 │  • Calls inspect_data_source or inspect_gwas_input to classify the input            │
